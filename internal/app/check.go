@@ -1,6 +1,10 @@
 package app
 
-import "time"
+import (
+	"time"
+
+	"github.com/gorhill/cronexpr"
+)
 
 // arrive at a status for a service
 // status should be healthy, unhealthy, or unknown
@@ -8,31 +12,37 @@ import "time"
 // needs to know when exitstatus started
 // needs to know when the last healthy check was
 
-type CheckTypeType int
-type CheckStatusType int
-
-const (
-	Interval CheckTypeType = 0
-)
+type CheckStatusType string
 
 type Check struct {
-	Name      string
-	Active    bool
-	CheckType CheckTypeType
-
+	GracePeriod int
 	LastCheckin time.Time
-	Interval    string
+	Name        string
+	Shortcode   string
+	Schedule    string
+	Status      CheckStatusType
 }
 
 const (
-	Healthy   CheckStatusType = 0
-	Unhealthy CheckStatusType = 1
-	Unknown   CheckStatusType = 2
+	Healthy   CheckStatusType = "healthy"
+	Unhealthy CheckStatusType = "unhealthy"
+	Unknown   CheckStatusType = "unknown"
+	Inactive  CheckStatusType = "inactive"
 )
 
-type CheckStatus struct {
-}
+func (c *Check) EvaluateStatus(evaluationTime time.Time) CheckStatusType {
+	if c.Status == Inactive {
+		return Inactive
+	}
 
-func (c *CheckStatus) GetStatus(ProgramStart time.Time) CheckStatusType {
+	nextTime := cronexpr.MustParse(c.Schedule).Next(c.LastCheckin)
+
+	if evaluationTime.After(nextTime) {
+		if c.Status == Unknown {
+			return Unknown
+		}
+		return Unhealthy
+	}
+
 	return Healthy
 }
