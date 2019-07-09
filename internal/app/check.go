@@ -6,12 +6,6 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
-// arrive at a status for a service
-// status should be healthy, unhealthy, or unknown
-
-// needs to know when exitstatus started
-// needs to know when the last healthy check was
-
 type CheckStatusType string
 
 type Check struct {
@@ -35,7 +29,12 @@ func (c *Check) NextCheckinDueDate() time.Time {
 	return nextTime.Add(time.Duration(c.GracePeriod) * time.Second)
 }
 
-func (c *Check) PerformTemporalCheck(evaluationTime time.Time) {
+func (c *Check) CheckIn(evaluationTime time.Time) {
+	c.LastCheckin = evaluationTime
+	c.UpdateTemporalStatus(evaluationTime)
+}
+
+func (c *Check) UpdateTemporalStatus(evaluationTime time.Time) {
 	if c.Status == InactiveStatus {
 		return
 	}

@@ -28,7 +28,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      InactiveStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(InactiveStatus))
 		})
@@ -41,7 +41,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      HealthyStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(HealthyStatus))
 		})
@@ -55,7 +55,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnhealthyStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(HealthyStatus))
 		})
@@ -70,7 +70,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      InactiveStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(InactiveStatus))
 		})
@@ -83,7 +83,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      HealthyStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(UnhealthyStatus))
 		})
@@ -96,7 +96,7 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnhealthyStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(UnhealthyStatus))
 		})
@@ -109,12 +109,35 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnknownStatus,
 			}
 
-			check.PerformTemporalCheck(time.Now())
+			check.UpdateTemporalStatus(time.Now())
 
 			Expect(t, check.Status).To(Equal(UnknownStatus))
 		})
 	})
 }
 
-func TestNextCheckinDueDate(t *testing.T) {
+func TestCheckIn(t *testing.T) {
+	o := onpar.New()
+	defer o.Run(t)
+
+	schedule := "*/20 * * * *"
+	runTime, _ := time.Parse("2006-Jan-02", "2013-Feb-03")
+
+	currentCheckInDueDate := cronexpr.MustParse(schedule).Next(runTime)
+	nextCheckInDueDate := cronexpr.MustParse(schedule).Next(currentCheckInDueDate)
+	check := &Check{
+		Name:        "active check",
+		LastCheckin: runTime,
+		Schedule:    "*/20 * * * *",
+		Status:      UnknownStatus,
+	}
+
+	o.Spec("It transitions from Unknown -> Healthy", func(*testing.T) {
+
+		check.CheckIn(currentCheckInDueDate)
+
+		Expect(t, check.Status).To(Equal(HealthyStatus))
+		Expect(t, check.LastCheckin).To(Equal(currentCheckInDueDate))
+		Expect(t, check.NextCheckinDueDate()).To(Equal(nextCheckInDueDate))
+	})
 }
