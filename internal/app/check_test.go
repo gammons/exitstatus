@@ -1,106 +1,107 @@
 package app
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/gorhill/cronexpr"
-	"github.com/stretchr/testify/suite"
+	"github.com/poy/onpar"
+	. "github.com/poy/onpar/expect"
+	. "github.com/poy/onpar/matchers"
 )
 
-type CheckStatusSuite struct {
-	suite.Suite
-}
+// all temporal checks are assumed to run *after* the check window.
+func TestTemporalChecks(t *testing.T) {
+	o := onpar.New()
+	defer o.Run(t)
 
-// active/inactive statuses are easy, since they only check the Active flag.
-func (suite *CheckStatusSuite) TestInactiveStatus() {
-
-	inactiveCheck := &Check{
-		Name:     "inactive check",
-		Schedule: "*/20 * * * *",
-		Status:   Inactive,
-	}
-
-	suite.Equal(Inactive, inactiveCheck.EvaluateStatus(time.Now()))
-}
-
-type UnknownStatusSuite struct {
-	suite.Suite
-}
-
-// Unknown will remain unknown if:
-// * the evaluation time is after the next due checkin
-// * the current status is unknown
-func (suite *UnknownStatusSuite) TestUnknownToUnknown() {
-	oneDayAgo := time.Now().Add(-24 * time.Hour)
-
-	check := &Check{
-		Name:        "active check",
-		LastCheckin: oneDayAgo,
-		Schedule:    "*/20 * * * *",
-		Status:      Unknown,
-	}
-
-	suite.Equal(Unknown, check.EvaluateStatus(time.Now()))
-}
-
-// If the last status was healthy, this will switch to unhealthy.
-func (suite *HealthyStatusSuite) TestHealthyToUnhealthy() {
-	oneDayAgo := time.Now().Add(-24 * time.Hour)
-
-	check := &Check{
-		Name:        "active check",
-		LastCheckin: oneDayAgo,
-		Schedule:    "*/20 * * * *",
-		Status:      Healthy,
-	}
-
-	suite.Equal(Unhealthy, check.EvaluateStatus(time.Now()))
-}
-
-// if the evaluation window is before the next required checkin time,
-// then the status remains healthy
-func (suite *HealthyStatusSuite) TestRemainsHealthy() {
 	nextTime := cronexpr.MustParse("*/20 * * * *").Next(time.Now())
 	nextTimeMinus10 := nextTime.Add(-10 * time.Minute)
-
-	check := &Check{
-		Name:        "active check",
-		LastCheckin: nextTimeMinus10,
-		Schedule:    "*/20 * * * *",
-		Status:      Healthy,
-	}
-
-	suite.Equal(Healthy, check.EvaluateStatus(time.Now()))
-}
-
-// If a status is currently unhealthy, and we evaluate
-func (suite *UnknownStatusSuite) TestStatusRemainsUnhealthy() {
 	oneDayAgo := time.Now().Add(-24 * time.Hour)
 
-	fmt.Println("oneDayAgo  is ", oneDayAgo)
+	o.Group("When a check has successfully checked in before window expiry", func() {
+		o.Spec("Inactive remains Inactive", func(*testing.T) {
+			check := &Check{
+				Name:        "inactive check",
+				LastCheckin: nextTimeMinus10,
+				Schedule:    "*/20 * * * *",
+				Status:      InactiveStatus,
+			}
 
-	check := &Check{
-		Name:        "active check",
-		LastCheckin: oneDayAgo,
-		Schedule:    "*/20 * * * *",
-		Status:      Unknown,
-	}
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(InactiveStatus))
+		})
 
-	suite.Equal(Unknown, check.EvaluateStatus(time.Now()))
+		o.Spec("Healthy remains healthy", func(*testing.T) {
+			check := &Check{
+				Name:        "active check",
+				LastCheckin: nextTimeMinus10,
+				Schedule:    "*/20 * * * *",
+				GracePeriod: 20,
+				Status:      HealthyStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(HealthyStatus))
+		})
+
+		// this might not be necessary.  This mechanism should be covered by the checkin functionality.
+		o.Spec("Unhealthy transitions to Healthy", func(*testing.T) {
+			check := &Check{
+				Name:        "active check",
+				LastCheckin: nextTimeMinus10,
+				Schedule:    "*/20 * * * *",
+				Status:      UnhealthyStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(HealthyStatus))
+		})
+	})
+
+	o.Group("When a check failed to check in before window expiry", func() {
+		o.Spec("Inactive remains Inactive", func(*testing.T) {
+			check := &Check{
+				Name:        "inactive check",
+				LastCheckin: oneDayAgo,
+				Schedule:    "*/20 * * * *",
+				Status:      InactiveStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(InactiveStatus))
+		})
+
+		o.Spec("Healthy transitions to Uhealthy", func(*testing.T) {
+			check := &Check{
+				Name:        "active check",
+				LastCheckin: oneDayAgo,
+				Schedule:    "*/20 * * * *",
+				Status:      HealthyStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnhealthyStatus))
+		})
+
+		o.Spec("Unhealthy remains unhealthy", func(*testing.T) {
+			check := &Check{
+				Name:        "active check",
+				LastCheckin: oneDayAgo,
+				Schedule:    "*/20 * * * *",
+				Status:      UnhealthyStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnhealthyStatus))
+		})
+
+		o.Spec("Unknown remains Unknown", func(*testing.T) {
+			check := &Check{
+				Name:        "active check",
+				LastCheckin: oneDayAgo,
+				Schedule:    "*/20 * * * *",
+				Status:      UnknownStatus,
+			}
+
+			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnknownStatus))
+		})
+	})
 }
 
-type HealthyStatusSuite struct {
-	suite.Suite
-}
-
-// required for a healthy status:
-// * status is currently healthy
-// * evaluation time is less than the next checkin time
-func TestChecks(t *testing.T) {
-	fmt.Println("here")
-	suite.Run(t, new(CheckStatusSuite))
-	suite.Run(t, new(UnknownStatusSuite))
-	suite.Run(t, new(HealthyStatusSuite))
+func TestNextCheckinDueDate(t *testing.T) {
 }

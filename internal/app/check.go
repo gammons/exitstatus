@@ -24,25 +24,28 @@ type Check struct {
 }
 
 const (
-	Healthy   CheckStatusType = "healthy"
-	Unhealthy CheckStatusType = "unhealthy"
-	Unknown   CheckStatusType = "unknown"
-	Inactive  CheckStatusType = "inactive"
+	HealthyStatus   CheckStatusType = "healthy"
+	UnhealthyStatus CheckStatusType = "unhealthy"
+	UnknownStatus   CheckStatusType = "unknown"
+	InactiveStatus  CheckStatusType = "inactive"
 )
 
-func (c *Check) EvaluateStatus(evaluationTime time.Time) CheckStatusType {
-	if c.Status == Inactive {
-		return Inactive
-	}
-
+func (c *Check) NextCheckinDueDate() time.Time {
 	nextTime := cronexpr.MustParse(c.Schedule).Next(c.LastCheckin)
+	return nextTime.Add(time.Duration(c.GracePeriod) * time.Second)
+}
 
-	if evaluationTime.After(nextTime) {
-		if c.Status == Unknown {
-			return Unknown
-		}
-		return Unhealthy
+func (c *Check) PerformTemporalCheck(evaluationTime time.Time) CheckStatusType {
+	if c.Status == InactiveStatus {
+		return InactiveStatus
 	}
 
-	return Healthy
+	if evaluationTime.After(c.NextCheckinDueDate()) {
+		if c.Status == UnknownStatus {
+			return UnknownStatus
+		}
+		return UnhealthyStatus
+	}
+
+	return HealthyStatus
 }
