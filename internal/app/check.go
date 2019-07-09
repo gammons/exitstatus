@@ -35,17 +35,18 @@ func (c *Check) NextCheckinDueDate() time.Time {
 	return nextTime.Add(time.Duration(c.GracePeriod) * time.Second)
 }
 
-func (c *Check) PerformTemporalCheck(evaluationTime time.Time) CheckStatusType {
+func (c *Check) PerformTemporalCheck(evaluationTime time.Time) {
 	if c.Status == InactiveStatus {
-		return InactiveStatus
+		return
 	}
 
 	if evaluationTime.After(c.NextCheckinDueDate()) {
 		if c.Status == UnknownStatus {
-			return UnknownStatus
+			return
 		}
-		return UnhealthyStatus
+		c.Status = UnhealthyStatus
+		return
 	}
 
-	return HealthyStatus
+	c.Status = HealthyStatus
 }

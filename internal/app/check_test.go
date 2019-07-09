@@ -28,7 +28,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      InactiveStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(InactiveStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(InactiveStatus))
 		})
 
 		o.Spec("Healthy remains healthy", func(*testing.T) {
@@ -36,11 +38,12 @@ func TestTemporalChecks(t *testing.T) {
 				Name:        "active check",
 				LastCheckin: nextTimeMinus10,
 				Schedule:    "*/20 * * * *",
-				GracePeriod: 20,
 				Status:      HealthyStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(HealthyStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(HealthyStatus))
 		})
 
 		// this might not be necessary.  This mechanism should be covered by the checkin functionality.
@@ -52,7 +55,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnhealthyStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(HealthyStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(HealthyStatus))
 		})
 	})
 
@@ -65,7 +70,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      InactiveStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(InactiveStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(InactiveStatus))
 		})
 
 		o.Spec("Healthy transitions to Uhealthy", func(*testing.T) {
@@ -76,7 +83,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      HealthyStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnhealthyStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(UnhealthyStatus))
 		})
 
 		o.Spec("Unhealthy remains unhealthy", func(*testing.T) {
@@ -87,7 +96,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnhealthyStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnhealthyStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(UnhealthyStatus))
 		})
 
 		o.Spec("Unknown remains Unknown", func(*testing.T) {
@@ -98,7 +109,9 @@ func TestTemporalChecks(t *testing.T) {
 				Status:      UnknownStatus,
 			}
 
-			Expect(t, check.PerformTemporalCheck(time.Now())).To(Equal(UnknownStatus))
+			check.PerformTemporalCheck(time.Now())
+
+			Expect(t, check.Status).To(Equal(UnknownStatus))
 		})
 	})
 }
