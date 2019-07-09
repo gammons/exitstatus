@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  pruneopts = "UT"
-  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
-  version = "v1.1.1"
-
-[[projects]]
   digest = "1:e3f17aa0eb8c151426d23cb767ae50f5b42c46533db3424761ee639b56ab9041"
   name = "github.com/gorhill/cronexpr"
   packages = ["."]
@@ -18,31 +10,24 @@
   version = "1.0.0"
 
 [[projects]]
-  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  pruneopts = "UT"
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:8ff03ccc603abb0d7cce94d34b613f5f6251a9e1931eba1a3f9888a9029b055c"
-  name = "github.com/stretchr/testify"
+  branch = "master"
+  digest = "1:22914168cb785dd5ae7795c98d5065b8a9ae552422a3137f1cffcfe10bb2b4c9"
+  name = "github.com/poy/onpar"
   packages = [
-    "assert",
-    "require",
-    "suite",
+    ".",
+    "expect",
+    "matchers",
   ]
   pruneopts = "UT"
-  revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
-  version = "v1.3.0"
+  revision = "ee068f8ea4d173927ba7b181a3fdb7f6c15f65c5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/gorhill/cronexpr",
-    "github.com/stretchr/testify/suite",
+    "github.com/poy/onpar",
+    "github.com/poy/onpar/expect",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
